@@ -1,0 +1,875 @@
+<!doctype html>
+<html>
+
+<head>
+
+	<title>Weather Forecast</title>
+	<meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />   
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.13.0/jquery.validate.min.js"></script>
+    <script src="http://openlayers.org/api/OpenLayers.js"> </script>
+    <script src="http://openweathermap.org/js/OWM.OpenLayers.1.3.4.js" ></script>
+   
+         
+    
+     
+    <script type="text/javascript">
+        $("document").ready(function() {
+            
+          
+            
+               $("#inputForm").validate({
+                  
+                   rules:
+                   {  
+                     address:
+                       {
+                           required:true
+                       },
+                       
+                       city:{
+                        required:true
+                       },
+                       
+                       state:{
+                        required:true       
+                       }
+                       
+                   },
+                       
+                   messages:
+                   {
+                   address:"Please enter the street address",
+                   city:"Please enter the city",
+                   state:"Please select a state"       
+                   },
+                   highlight: function (element) {
+            $(element).parent().addClass('error')
+        },
+        unhighlight: function (element) {
+            $(element).parent().removeClass('error')
+        },
+                  
+                 submitHandler:function(form)
+                   {
+                       //Activate first tab
+                       focusFirstTab('rightNowTAB');
+                       
+                       var data={
+                           'city1':$('input[name=city]').val(),
+                           'address1':$('input[name=address]').val(),
+                           'state1':$('#state :selected').text(),
+                           'unit1':$('input[name=unit]:checked','#inputForm').val()
+                       };
+                    console.log(data);
+                   $.ajax({
+                       
+                       type: 'GET',
+                       data:data,
+                       datatype: 'json',
+                       url: "http://weatherforecast.elasticbeanstalk.com",
+                       success: function (weather_data){
+                           var result=JSON.parse(weather_data);
+                           console.log(result); 
+                         
+                                if($('input[name=unit]:checked', '#inputForm').val()== "us")
+                                {
+                                   var unit="F";
+                                }
+                                    else
+                                    {
+                                   var unit="C";
+                                    }
+                                var icon=result["currently"]["icon"]?result["currently"]["icon"]:"N.A.";
+                                var summary=result["currently"]["summary"]?result["currently"]["summary"]:"N.A.";
+                                var temperature=result["currently"]["temperature"]?result["currently"]["temperature"]:"N.A.";
+                                var dewpoint=result["currently"]["dewPoint"]?result["currently"]["dewPoint"]:"N.A.";
+                                var humidity=result["currently"]["humidity"]?result["currently"]["humidity"]:"N.A.";
+                                var windspeed=result["currently"]["windSpeed"]?result["currently"]["windSpeed"]:"N.A.";
+                                var visibility=result["currently"]["visibility"]?result["currently"]["visibility"]:"N.A.";
+                                var precipProbability=result["currently"]["precipProbability"]?result["currently"]["precipProbability"]:"N.A.";
+                                var precipIntensity =result["currently"]["precipIntensity"];
+                                var sunsetTime=result["daily"]["data"][0]["sunsetTime"]?result["daily"]["data"][0]["sunsetTime"]:"N.A.";
+                                var sunriseTime=result["daily"]["data"][0]["sunriseTime"]?result["daily"]["data"][0]["sunriseTime"]:"N.A.";
+                                if(0 <= precipIntensity && precipIntensity < 0.002)
+                                     {
+                                       var precipitation="None";
+                                     }
+                                  else  if(0.002 <= precipIntensity && precipIntensity < 0.017)
+                                     {
+                                       var precipitation="Very Light";
+                                     }
+
+                                 else  if(0.017 <= precipIntensity && precipIntensity < 0.1)
+                                 {
+                                      var precipitation="Light";
+                                 }
+                                 else  if(0.1 <= precipIntensity && precipIntensity < 0.4)
+                                 {
+                                      var precipitation="Moderate";
+                                  }
+                                else  if(0.4 <= precipIntensity)
+                                {
+                                      var precipitation="Heavy";
+                                }
+                                     var chancesOfRain=(precipIntensity*100)+"%";
+                                     
+                           if(unit == "C")
+                                      {
+                                          if(windspeed!="N.A.")
+                                            windspeed+=" m/s";
+                                          if(visibility!="N.A.")
+                                            visibility+=" Km";
+                                        //var  pressure+="hPa"
+                                      }
+                                      else
+                                      {
+                                         if(windspeed!="N.A.")
+                                            windspeed+=" mph";
+                                          if(visibility!="N.A.")
+                                            visibility+=" mi";
+                                         //var pressure+="mb";
+                                      }  
+ 
+                                   
+    //use setcenter to set the zoom and location                       
+     //adjust opacity of layers                      
+        $('#result').css("display","block");
+        $('#rightNowData').html('');
+        $('#rightNowIcon').html('');  
+        $('#rightNowTable').html('');  
+        $('#hourlyDataTable').html('');  
+        $('#openMap').html('');
+    
+                         
+    switch(icon){
+            
+            case "clear-day": 
+                var imageIcon1='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/clear.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\" ></img>';
+                $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "clear-night": 
+           var imageIcon1= '<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/clear_night.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\" ></img>';
+                 $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "rain": 
+            var imageIcon1='<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/rain.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\"></img>';
+                 $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "snow": 
+            var imageIcon1='<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/snow.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\"></img>';
+                  $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "sleet": 
+            var imageIcon1='<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/sleet.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\"></img>';
+                  $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "wind": 
+             var imageIcon1='<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/wind.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\" ></img>';
+                  $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "fog": 
+            var imageIcon1='<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/fog.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\"></img>';
+                 $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "cloudy": 
+            var imageIcon1='<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/cloudy.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\"></img>';
+                 $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "partly-cloudy-day": 
+             var imageIcon1='<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/cloud_day.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\" ></img>';
+                 $('#rightNowIcon').append(imageIcon1);
+                break;
+            case "partly-cloudy-night": 
+            var imageIcon1='<img src=\"http://cs-server.usc.edu:45678/hw/hw8/images/cloud_night.png\"  alt=icon  title=summary style=\"width:120px;height:120px;margin:auto;\" ></img>';
+                  $('#rightNowIcon').append(imageIcon1);
+                break;
+                
+                
+        }
+    
+      $('#rightNowData').append('<p  style="color:white;font-size:110%;font-weight:bold;" align="center">'+summary+'&nbsp;in&nbsp;'+$('input[name=city]').val()+', '+$('#state :selected').val()+'<h1 style="color:white;" align="center">'+ Math.round(temperature)+'<span style="font-size: 16px;position:relative;top:-18px;font-weight:none; ">&deg'+unit+'</span>&nbsp;</h1><br><p style="color:#3D1FDD" align="center">L:&nbsp;'+ result["daily"]["data"][0]["temperatureMin"] +'<sup>o</sup><span  style="color:#4D7E28;">&nbsp;|&nbsp;H:&nbsp;'+ result["daily"]["data"][0]["temperatureMax"] +'<sup>o</sup>&nbsp;&nbsp;<img id="fbIcon" src="http://cs-server.usc.edu:45678/hw/hw8/images/fb_icon.png"  style="width:30px;height:30px;"  class="pull-right"></img></span></p>');  
+     
+	
+                           
+$("#fbIcon").click(function() {
+    
+         
+ var fbdesc = summary + ', ' + Math.round(temperature) + '\xB0'+unit;
+ var fbname="Current weather in "+$('input[name=city]').val()+", "+$('#state :selected').text();
+    var fbpicture="";
+     switch(icon)
+									{
+										case 'clear-day': fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/clear.png'; break;
+										case 'clear-night': fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/clear_night.png'; break;
+										case 'rain': fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/rain.png'; break;
+										case 'snow': fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/snow.png'; break;
+										case 'sleet': fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/sleet.png'; break;
+										case 'wind': fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/wind.png'; break;
+										case 'fog':	fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/fog.png'; break;
+										case 'cloudy': fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/cloudy.png'; break;
+										case 'partly-cloudy-day': fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/cloud_day.png'; break;
+										case 'partly-cloudy-night':	fbpicture='http://cs-server.usc.edu:45678/hw/hw8/images/cloud_night.png'; break;		 
+									}
+    
+   facebookPost(fbpicture, fbdesc, fbname);
+    
+});
+
+     $('#rightNowTable').append('<tr><td>Precipitation</td><td>'+precipitation+'</td></tr><tr><td>Chances of Rain</td><td>'+ chancesOfRain +'</td></tr><tr><td>Wind Speed</td><td>'+windspeed+'</td></tr><tr><td>Dew Point</td><td>'+dewpoint +'&nbsp;<sup>o</sup>'+unit+'</td></tr><tr><td>Humidity</td><td>'+humidity  +'%</td></tr><tr><td>Visibility</td><td>'+ visibility+'</td></tr><tr><td>Sunrise</td><td>'+sunriseTime +'</td></tr><tr><td>Sunset</td><td>'+sunsetTime+'</td></tr>');
+       
+    $('#openMap').html('<div id="openMapInside"></div>'); 
+     var height1=($('#currentDataColumn').height()-4);
+     $('#openMapInside').height(height1);                       
+     createMap(result.latitude, result.longitude);
+                           
+                           
+                           
+  
+                           
+ $('#hourlyDataTable').append('<tr ><th style="background-color:#2F70A8;color:white;">Time</th><th style="background-color:#2F70A8;color:white;">Summary</th><th style="background-color:#2F70A8;color:white;">Cloud Cover</th><th style="background-color:#2F70A8;color:white;">Temp (&deg'+unit+')</th><th style="background-color:#2F70A8;color:white;">View Details</th></tr>');
+    
+                           
+                          
+                           
+  for(var i=0;i<25;i++)
+  {
+      var icon1=result.hourly.data[i].icon;
+switch(icon1){
+            
+            case "clear-day": 
+                var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/clear.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;
+            case "clear-night": 
+                var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/clear_night.png"  alt=icon  title=summary style="width: 40px;height:40px;" align="center" ></img>';
+                break;
+            case "rain": 
+                 var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/rain.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;
+            case "snow": 
+                   var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/snow.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;
+            case "sleet": 
+                  var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/sleet.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;
+            case "wind": 
+                   var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/wind.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;
+            case "fog": 
+                 var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/fog.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;
+            case "cloudy": 
+                 var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/cloudy.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;
+            case "partly-cloudy-day": 
+                 var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/cloud_day.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;
+            case "partly-cloudy-night": 
+                  var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/cloud_night.png"  alt=icon  title=summary style="width:40px;height:40px;" align="center" ></img>';
+                break;     
+        }                           
+          
+       
+                                           var windspeed1=(result.hourly.data[i].windSpeed).toFixed(2)?(result.hourly.data[i].windSpeed).toFixed(2):"N.A.";
+                                           var visibility1=(result.hourly.data[i].visibility).toFixed(2)?(result.hourly.data[i].visibility).toFixed(2):"N.A.";
+                                           var  pressure1=(result.hourly.data[i].pressure)?(result.hourly.data[i].pressure):"N.A.";
+      
+       if(unit == "C")
+                                      {
+                                        if(windspeed1!="N.A.")
+                                            windspeed1+=" m/s";
+                                        if(visibility1!="N.A.")
+                                            visibility1+=" Km";
+                                        if(pressure1!="N.A.")
+                                            pressure1+=" hPa";
+                                      }
+                                      else
+                                      {
+                                          if(windspeed1!="N.A.")
+                                            windspeed1+=" mph";
+                                          if(visibility1!="N.A.")
+                                            visibility1+=" mi";
+                                          if(pressure1!="N.A.")
+                                            pressure1+=" mb";
+                                           
+                                      }  
+
+
+       
+       $('#hourlyDataTable').append('<tr><td>' + result.hourly.data[i].time + '</td><td>' + imageIcon + '</td><td>' + Math.round(result.hourly.data[i].cloudCover * 100) + '%</td><td>'+(result.hourly.data[i].temperature).toFixed(2) + '</td><td><span class="glyphicon glyphicon-plus" data-toggle="collapse" data-target="#viewDetail'+ i +'" aria-expanded="false" aria-controls="viewDetail'+ i +'" aria-hidden="true"></span></td></tr>');
+      
+ $('#hourlyDataTable').append('<tr class="collapse" id="viewDetail'+ i +'" style="background-color:#E8E8E8;"><td colspan="5"><div class="table-responsive"><table class="table" style="background-color:#E8E8E8;><tr"><th style="background-color:white;">Wind</th><th style="background-color:white;">Humidity</th><th style="background-color:white";>Visibility</th><th style="background-color:white;">Pressure</th></tr><tr><td style="background-color:#E8E8E8;">' + windspeed1 + '</td><td style="background-color:#E8E8E8;">' + Math.round(result.hourly.data[i].humidity * 100) + '%</td><td style="background-color:#E8E8E8;">' + visibility1+ '</td><td style="background-color:#E8E8E8;">' + pressure1+'</td></tr></table></div>');
+                                  
+  }
+                          
+        
+      $('#dailyModal').empty();                   
+    $('#dailyModal').append(' <div class="col-md-2"></div>');
+                           
+                           var backgroundColors=["#357CB4","#EB4343","#E58D4E","#A6A338","#966FA6","#F27B7D","#CD4470"];
+for(var i=1;i<8;i++)
+  {
+      var day=result.daily.data[i].day?result.daily.data[i].day:"N.A."; //convert to day
+      var monthDate=result.daily.data[i].today?result.daily.data[i].today:"N.A."; //convert to month date
+      var icon2=result.daily.data[i].icon?result.daily.data[i].icon:"N.A."; 
+      var maxTemp=result.daily.data[i].temperatureMax?result.daily.data[i].temperatureMax:"N.A.";
+      var minTemp=result.daily.data[i].temperatureMin?result.daily.data[i].temperatureMin:"N.A.";
+      var summaryNew=result.daily.data[i].summary?result.daily.data[i].summary:"N.A.";
+      var humidityNew=result.daily.data[i].humidity?result.daily.data[i].humidity:"N.A.";
+      var visibilityNew=result.daily.data[i].visibility?result.daily.data[i].visibility:"N.A.";
+      var windspeedNew=result.daily.data[i].windSpeed?result.daily.data[i].windSpeed:"N.A.";
+      var pressureNew=result.daily.data[i].pressure?result.daily.data[i].pressure:"N.A.";
+      var sunsetTimeNew=result.daily.data[i].sunsetTime?result.daily.data[i].sunsetTime:"N.A.";
+      var sunriseTimeNew=result.daily.data[i].sunriseTime?result.daily.data[i].sunriseTime:"N.A.";
+ 
+         if(unit == "C")
+                                      {
+                                        if(windspeedNew!="N.A.")
+                                            windspeedNew+=" m/s";
+                                        if(visibilityNew!="N.A.")
+                                            visibilityNew+=" Km";
+                                        if(pressureNew!="N.A.")
+                                            pressureNew+=" hPa";
+                                      }
+                                      else
+                                      {
+                                          if(windspeedNew!="N.A.")
+                                            windspeedNew+=" mph";
+                                          if(visibilityNew!="N.A.")
+                                            visibilityNew+=" mi";
+                                          if(pressureNew!="N.A.")
+                                            pressureNew+=" mb";
+                                           
+                                      }  
+      
+      
+switch(icon2){
+            
+            case "clear-day": 
+                var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/clear.png"  alt=icon  title=summary  align="center" ></img>';
+                break;
+            case "clear-night": 
+                var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/clear_night.png"  alt=icon  title=summary  align="center" ></img>';
+                break;
+            case "rain": 
+                 var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/rain.png"  alt=icon  title=summary  align="center" ></img>';
+                break;
+            case "snow": 
+                   var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/snow.png"  alt=icon  title=summary align="center" ></img>';
+                break;
+            case "sleet": 
+                  var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/sleet.png"  alt=icon  title=summary align="center" ></img>';
+                break;
+            case "wind": 
+                   var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/wind.png"  alt=icon  title=summary  align="center" ></img>';
+                break;
+            case "fog": 
+                 var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/fog.png"  alt=icon  title=summary  align="center" ></img>';
+                break;
+            case "cloudy": 
+                 var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/cloudy.png"  alt=icon  title=summary  align="center" ></img>';
+                break;
+            case "partly-cloudy-day": 
+                 var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/cloud_day.png"  alt=icon  title=summary  align="center" ></img>';
+                break;
+            case "partly-cloudy-night": 
+                  var imageIcon='<img src="http://cs-server.usc.edu:45678/hw/hw8/images/cloud_night.png"  alt=icon  title=summary  align="center" ></img>';
+                break;     
+        }  
+      
+   
+       $('#dailyModal').append('<div class="col-md-1" style="padding:0px;"><div class="classWithPad borderRadius" style="background-color:'+backgroundColors[i-1]+';" data-toggle="modal" data-target="#Next7days'+i+'Modal" id="Next7days'+i+'"></div></div>');
+      
+      
+      
+      
+      
+      $('#next7DaysTAB').append('<div id="Next7days'+i+'Modal" class="modal" role="dialog"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal"><span       ariahidden="true">&times;</span><span class="sr-only">Close</span></button><h4 class="modal-title" id="myModalTitle'+i+'"></h4></div><div class="modal-body" id="myModalBody'+i+'"style="text-align:center;"></div><div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Close</button></div></div></div></div>');
+      
+      //create modal for that particular day
+      
+       //populate the modal
+      
+      
+       var id='#Next7days'+i;
+      
+      var idModalTitle='#myModalTitle'+i;
+      
+      var idModalBody='#myModalBody'+i;
+      $(idModalBody).empty();
+      $(idModalTitle).empty();
+
+      $(idModalTitle).append('Weather in '+$('input[name=city]').val()+'&nbsp;on&nbsp;'+monthDate);
+      
+      
+      $(idModalBody).append(imageIcon+'<h2 align="center">'+day+':'+'&nbsp;<span style="color:#FEA401;">'+summaryNew+'</span></h2><br><div class="row"><div class="col-md-4"><p style="font-weight:bold;">Sunrise Time</p><p>'+ sunriseTimeNew+'</p></div><div class="col-md-4"><p style="font-weight:bold;">Sunset Time</p>'+sunsetTimeNew+'<p></p></div><div class="col-md-4"><p style="font-weight:bold;">Humidity</p>'+Math.round(humidityNew*100)+'%<p></p></div></div><div class="row"><div class="col-md-4"><p style="font-weight:bold;">Wind Speed</p><p>'+windspeedNew+'</p></div><div class="col-md-4"><p style="font-weight:bold;">Visibility</p><p>'+visibilityNew+'</p></div><div class="col-md-4"><p style="font-weight:bold;">Pressure</p><p>'+pressureNew+'</p></div></div>');
+      
+      
+     
+      
+          
+      $(id).css("text-align","center");
+      $(id).css("color","white");
+      
+    $(id).append('<p style="text-align:center;font-weight:bold;">'+ day+'</p><p>'+ monthDate+'</p><p>'+imageIcon+'</p><p>Min<br>Temp</p><h3>'+Math.round(minTemp)+'<sup>o</sup></h3><p>Max<br>Temp</p><h3>'+Math.round(maxTemp)+'<sup>o</sup></h3>');
+                                         
+  }
+                          $('#dailyModal').append(' <div class="col-md-3"></div>');
+                             
+                              }
+                       
+                         });
+                     return false;
+                   }
+                  
+            });
+            
+            
+          
+        });
+        
+        
+        
+         var states=["Select your state...", "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "District Of Columbia", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"];
+
+        var value=["", "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"];
+        
+        function initializeStateDropdown(){
+            var select = document.getElementById("state");
+            for(var i = 0; i < states.length; i++) {
+                 var opt = document.createElement("option");
+                   opt.innerHTML = states[i];
+                     opt.value = value[i];
+                       select.appendChild(opt);
+                                   }
+            select.selectedIndex=0;
+        }
+        
+        function clearForm()
+             {
+                 document.getElementById("address").value="";
+                 document.getElementById("city").value="";
+                var select= document.getElementById("state");
+                 select.selectedIndex=0;
+                 document.getElementById("Fahrenheit").checked=true; 
+                  document.getElementById("Celsius").checked=false; 
+                     document.getElementById("result").style.display="none";
+                 $('#inputForm').clearValidation();
+                 
+             }
+        
+      $.fn.clearValidation = function(){var v = $(this).validate();$('[name]',this).each(function(){v.successList.push(this);v.showErrors();});v.resetForm();v.reset();};
+        
+function createMap(lat, lon){
+    var map = new OpenLayers.Map("openMapInside");
+			var fromProjection = new OpenLayers.Projection("EPSG:4326");   // Transform from WGS 1984
+			var toProjection   = new OpenLayers.Projection("EPSG:900913"); // to Spherical Mercator Projection
+			var position       = new OpenLayers.LonLat(lon, lat).transform( fromProjection, toProjection);
+			// Create overlays
+			//  OSM
+			var mapnik = new OpenLayers.Layer.OSM();
+			var layer_cloud = new OpenLayers.Layer.XYZ(
+								"clouds",
+								"http://${s}.tile.openweathermap.org/map/clouds/${z}/${x}/${y}.png",
+								{
+									isBaseLayer: false,
+									opacity: 0.7,
+									sphericalMercator: true
+								}
+							);
+			var layer_precipitation = new OpenLayers.Layer.XYZ(
+				"precipitation",
+				"http://${s}.tile.openweathermap.org/map/precipitation/${z}/${x}/${y}.png",
+				{
+					isBaseLayer: false,
+					opacity: 0.7,
+					sphericalMercator: true
+				}
+			);
+    
+    
+			map.addLayers([mapnik, layer_precipitation, layer_cloud]);
+			map.setCenter( position, 8 );
+ 
+            //map.tileManager.destroy();
+    
+            OpenLayers.Util.onImageLoadError = function(){
+            this.src = "";
+            this.alt = "Map unavailable";
+            this.title = "Map Unavailable"
+            };
+    
+		}      
+        
+        
+        function focusFirstTab(tab){
+            $('.nav-tabs a[href="#' + tab + '"]').tab('show');
+        };
+        
+        function facebookPost(fbpicture, fbdesc, fbname){
+        
+            FB.ui(
+       			{ 
+              method: 'feed',
+			  redirect_uri: 'http://cs-server.usc.edu:52921/HW8/homework8.html',
+			  link: 'http://forecast.io/',
+			  picture: fbpicture,
+			  name: fbname,
+			  caption: 'WEATHER INFORMATION FROM FORECAST.IO',
+			  description: fbdesc
+       			  },
+       			  function(response){ 
+                      if (response && !response.error_message) {
+                            alert('Posted successfully');
+                                }
+                      else {
+                      alert('Not posted');
+            } });
+            
+        }
+
+       
+    </script>
+    
+   
+    <style>
+     
+         
+        body{    
+            
+            background: url("http://cs-server.usc.edu:45678/hw/hw8/images/bg.jpg") no-repeat center center fixed; 
+            background-size:cover;
+           
+        }
+        
+        .main{
+            background: rgba(30,30,30,0.4);
+            color: white;
+            padding: 10px;
+        }
+        
+        
+        
+        h2#title{
+            padding-top: 0;
+            margin-top: 0;
+            color: black;
+        }
+        
+        .required{
+            color: red;
+            
+        }
+        
+        .requiredField{
+            color: red;
+            margin:3px;
+            padding: 0;
+            display: none;
+            font-size:85%;   
+        }
+        
+        #footer {
+ 	 	    width:100%;
+        }
+        
+        #myTab li a{
+            background-color:#EDEDED; 
+            color: #2F70A8;
+        
+        }
+        
+        #myTab li.active a{
+            background-color: #2F70A8;  
+            color: #EDEDED;
+            
+        }
+        
+        .topHeader {
+            background-color:#F27E7F; 
+            padding:20px;
+            margin:0px auto;
+        }
+          
+        .headerRow{
+            
+            background-color:#2F70A8; 
+            color:white;
+            font-weight:bold;   
+        }
+        
+        #hourlyDataTable{
+            background-color: #FDFDFD;   
+            text-align: center;
+        }
+        
+     .error {
+        color: red;
+}
+        
+        
+        
+        .table-striped>tbody>tr:nth-child(odd)>td,
+         .table-striped>tbody>tr:nth-child(odd)>th {
+	       background-color: #F9F9F9;    
+         }
+         
+        .table{
+             background: #F1DDDD;
+             margin:0;
+             padding:0;  
+        }
+       
+     
+        
+        .result{
+            padding-top: 10px;
+            padding-bottom: 20px;
+
+        }
+     
+        
+       .row.no-pad {
+           margin-right:0;
+           margin-left:0;
+
+                 }
+       .row.no-pad > [class*='col-'] {
+          padding-right:0;
+          padding-left:0;
+   
+       }
+        .classWithPad { margin:7px 10px 7px 0px; padding:5px 0px 5px 0px; }
+         
+         .borderRadius{
+            border-radius:8px;
+         }
+         
+        .background{
+
+         background-color: black;
+        }
+            
+         #openMapInside{
+            border:2px white solid;
+         } 
+             
+         
+        @media(max-width:991px){
+            .background {
+                    background-color: transparent;
+            }
+            
+            .classWithPad { margin:7px 0px 7px 0px; padding:5px 0px 5px 0px; }
+            
+            .borderRadius{
+                border-radius:30px;
+            }
+        }
+         
+         
+      #next7DaysTAB  #dailyModal img{
+            width: 40px;
+            height: 40px;
+            
+        }
+        
+        #next7DaysTAB img{
+         width: 100px;
+        height: 100px;
+        }
+         
+         .collapse{
+             background-color: #E8E8E8;
+         }
+         
+         th{
+            text-align: center;
+         }
+        
+    </style>
+    
+    
+
+	  
+</head>
+
+<body>
+    
+    <script>
+        window.fbAsyncInit = function() {
+        FB.init({
+            appId      : '499652023529496',
+            xfbml      : true,
+            version    : 'v2.5'
+        });
+        };
+
+        (function(d, s, id){
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) {return;}
+            js = d.createElement(s); js.id = id;
+            js.src = "//connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+
+    </script>
+            
+  <div class="container">
+    <div class="container label">
+        
+        <h2 id="title"> Forecast Search</h2>
+    
+    </div>
+            
+    <div class="main">
+        
+        <div class="row">
+        <form id="inputForm" role="form" method="GET" >
+            <div class="col-md-2">
+                Street:<span class="required">*</span>
+                <div class="form-group">
+                    <input type="text" class="form-control input-sm" placeholder="Enter street address" id="address" minlength="1" name="address" required >
+                </div>
+
+            </div>
+            
+            <div class="col-md-2">
+                City:<span class="required">*</span>
+                <div class="form-group">
+                    <input type="text" class="form-control input-sm" placeholder="Enter the city" id="city" name="city" minlength="1" required>
+                </div>
+
+            </div>
+            
+            <div class="col-md-2">
+                State:<span class="required">*</span>
+                <div class="form-group">
+                    <select class="form-control input-sm" id="state" name="state" required>
+                    </select>
+                </div>
+
+            </div>
+            
+            <script type="text/javascript">
+                initializeStateDropdown();
+            </script>
+            
+            <div class="col-md-3">
+                Degree:<span class="required">*</span>
+                <div class="radio">
+                   <label class="radio-inline input"><input type="radio" name="unit" value="us" id="Fahrenheit" checked>Fahrenheit</label>
+                    <label class="radio-inline input"><input type="radio" name="unit" value="si" id="Celsius">Celsius</label>
+    
+            </div>
+        </div>
+            
+         
+            <div class="col-md-3"><span class="pull-right">
+                
+                    <button type="submit" class="btn btn-primary btn-sm" aria-label="Left Align" id="search">
+                        <span class="glyphicon glyphicon-search"></span>
+                        Search
+                    </button>
+                      &nbsp;
+                    <button type="button" class="btn btn-default btn-sm" aria-label="Left Align" id="clear" onclick="clearForm()">
+                        <span class="glyphicon glyphicon-refresh"></span>
+                        Clear
+                    </button>
+             
+            
+            </div>
+        </form>         
+        </div>
+
+        <div class="row">
+         <div class="col-md-2"></div>   
+        <div class="col-md-2"></div> 
+         <div class="col-md-2"></div>    
+           <div class="col-md-3"></div> 
+            <div class="col-md-3"><span class="pull-right">
+            <p style="color:white;float:left;">Powered by:</p>                
+ 	 	 	<a href="http://forecast.io/"><img src="http://cs-server.usc.edu:45678/hw/hw8/images/forecast_logo.png" style="width:90px;height:50px;float:left;margin-left:5px;position:relative;bottom:12px;"></img></a>
+            </div> 
+        </div> 
+    </div>
+ 
+      <hr>
+    
+    <div class="result" id="result" style="display:none;">
+
+      <ul class="nav nav-tabs " id="myTab">
+        <li class="active"><a data-toggle="tab" href="#rightNowTAB">Right Now</a></li>
+        <li><a data-toggle="tab" href="#next24HoursTAB">Next 24 Hours</a></li>
+        <li><a data-toggle="tab" href="#next7DaysTAB">Next 7 Days</a></li>
+      </ul>
+
+      <div class="tab-content">
+          
+           <div id="rightNowTAB" class="tab-pane fade in active">
+                   <div class="row no-pad">
+                
+                        <div class="col-md-6" id="currentDataColumn">
+                            <div class="row topHeader">
+                                <div class="col-md-6" id="rightNowIcon" style="text-align:center;">
+                                </div>
+                                       
+                                <div class="col-md-6" id="rightNowData">
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                               <table class="table table-striped table-bordered" id="rightNowTable">
+                  
+                                </table> 
+                                
+                            </div>
+                        </div>
+                   
+                        <div class="col-md-6" >
+                            <div id="openMap" ></div>
+                            
+                               
+                        </div>   
+               
+                    </div>
+           </div>
+       
+          <div id="next24HoursTAB" class="tab-pane fade">
+              
+
+                    <table class="table" id="hourlyDataTable">
+                  
+            </table>
+            
+            
+          </div>
+        
+          <div id="next7DaysTAB" class="tab-pane fade background" >
+           
+        <div class="container">
+                     <div class="row"  id="dailyModal">
+
+                      </div>
+                     
+                   </div>
+           
+        </div>
+        
+          
+    </div>
+            
+    </div>
+        
+  </div>
+    
+</body>
+
+</html>
+
+    
+
+                  
+                  
